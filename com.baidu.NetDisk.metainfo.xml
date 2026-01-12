@@ -6,8 +6,8 @@
     <developer_name>Baidu, Inc</developer_name>
     <summary>Baidu Netdisk desktop client</summary>
     <description>
+        <p>**NOTE: This wrapper is not verified by, affiliated with, or supported by Baidu.**</p>
         <p>Baidu Netdisk desktop client</p>
-        <p>NOTE: This wrapper is not verified by, affiliated with, or supported by Baidu.</p>
     </description>
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>LicenseRef-proprietary=http://pan.baidu.com/disk/duty/</project_license>
