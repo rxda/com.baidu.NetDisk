@@ -1,0 +1,31 @@
+name: Build Flatpak
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  flatpak:
+    name: Build Flatpak
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-23.08
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: com.baidu.NetDisk.yaml
+          bundle: com.baidu.NetDisk.flatpak
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Upload bundle as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-bundle
+          path: com.baidu.NetDisk.flatpak
