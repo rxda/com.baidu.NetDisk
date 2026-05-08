@@ -1,0 +1,81 @@
+name: Build Flatpak
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'com.baidu.NetDisk.yaml'
+      - 'com.baidu.NetDisk.desktop'
+      - 'com.baidu.NetDisk.metainfo.xml'
+      - 'com.baidu.NetDisk.svg'
+      - '.github/workflows/build-flatpak.yml'
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # 每天 UTC 时间 6:00 检查更新
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    # 允许手动触发
+
+jobs:
+  flatpak:
+    name: "Build Flatpak"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub/flatpak-builder-lint:latest
+      options: --privileged
+
+    strategy:
+      matrix:
+        arch: [x86_64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y flatpak-builder flatpak make
+
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install Flatpak SDK and runtime
+        run: |
+          flatpak install -y flathub org.freedesktop.Platform//23.08
+          flatpak install -y flathub org.freedesktop.Sdk//23.08
+          flatpak install -y flathub org.electronjs.Electron2.BaseApp//23.08
+
+      - name: Build Flatpak
+        id: build
+        run: |
+          flatpak-builder \
+            --force-clean \
+            --ccache \
+            --repo=repo \
+            --arch=${{ matrix.arch }} \
+            --subject="Build of com.baidu.NetDisk @ ${{ github.sha }}" \
+            build-dir \
+            com.baidu.NetDisk.yaml
+
+      - name: Export Flatpak bundle
+        run: |
+          flatpak build-bundle \
+            --arch=${{ matrix.arch }} \
+            repo \
+            com.baidu.NetDisk-${{ matrix.arch }}.flatpak \
+            com.baidu.NetDisk
+
+      - name: Upload Flatpak artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: com.baidu.NetDisk-${{ matrix.arch }}
+          path: com.baidu.NetDisk-${{ matrix.arch }}.flatpak
+          if-no-files-found: error
+
+      - name: Check external data
+        run: |
+          flatpak run --command=flatpak-external-data-checker \
+            org.flatpak.Builder \
+            com.baidu.NetDisk.yaml 2>&1 || true
